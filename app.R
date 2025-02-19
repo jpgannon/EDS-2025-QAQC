@@ -4,6 +4,8 @@ library(plotly)
 library(readr)
 library(bslib)
 
+# Alex comment
+
 options(shiny.maxRequestSize = 30 * 1024^2)  # Increase file upload size limit
 
 # Define UI
