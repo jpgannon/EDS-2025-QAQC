@@ -4,20 +4,18 @@ library(plotly)
 library(readr)
 library(bslib)
 
-# Alex comment
-
 options(shiny.maxRequestSize = 30 * 1024^2)  # Increase file upload size limit
 
 # Define UI
 ui <- fluidPage(
-  #theme = bs_theme(preset = "darkly"),
-  
   titlePanel("File Upload and Interactive ggplot"),
   
   sidebarLayout(
     sidebarPanel(
       fileInput("file", "Upload CSV File", accept = ".csv"),  # File upload input
-      uiOutput("parameter_selector"),  # Dynamic parameter selector
+      uiOutput("parameter_selector"),
+      uiOutput("airTemp_selector"),
+      uiOutput("precip_selector"), # Dynamic parameter selector
       actionButton("plot_button", "Generate Plot"),  # Button to generate plot
       actionButton("reset_button", "Reset")  # Reset button
     ),
@@ -25,17 +23,18 @@ ui <- fluidPage(
     mainPanel(
       plotlyOutput("interactive_plot"),  # ggplotly interactive plot output
       radioButtons("interaction_mode", "Mode:", 
-                   choices = list("Select Points" = "select", 
-                                  "Zoom/Pan" = "zoom"), 
+                   choices = list("Select Points" = "select", "Zoom/Pan" = "zoom"), 
                    inline = TRUE),
-      
-      verbatimTextOutput("brush_info")
+      verbatimTextOutput("brush_info")  # Displays selected points
     )
   )
 )
 
 # Define server
 server <- function(input, output, session) {
+  
+  # Reactive values to store the plot
+  rv <- reactiveValues(plot = NULL)
   
   # Read uploaded CSV file
   data <- reactive({
@@ -53,7 +52,19 @@ server <- function(input, output, session) {
     output$parameter_selector <- renderUI({
       req(data())
       cols <- colnames(data())
-      checkboxGroupInput("parameters", "Select Parameter", choices = cols[-1])
+      selectInput("parameters", "Select Parameter(s)", choices = cols[-1], multiple = TRUE)
+    })
+    
+    output$airTemp_selector <- renderUI({
+      req(data())
+      cols <- colnames(data())
+      selectInput("air_temp_param", "Select Air Temperature Parameter", choices = cols[-1])
+    })
+    
+    output$precip_selector <- renderUI({
+      req(data())
+      cols <- colnames(data())
+      selectInput("precip_param", "Select Precipitation Parameter", choices = cols[-1])
     })
   })
   
@@ -63,35 +74,41 @@ server <- function(input, output, session) {
     df <- data()
     
     # Create a base Plotly scatterplot with multiple traces for selected parameters
-    current_plot <- plot_ly(df, x = df[[1]])  # First column as X-axis
+    plot <- plot_ly(df, x = ~df[[1]])  # First column as X-axis
     
     for (param in input$parameters) {
-      current_plot <- current_plot %>%
+      plot <- plot %>%
         add_trace(y = df[[param]], type = "scatter", mode = "lines", name = param)
     }
     
-    output$interactive_plot <- renderPlotly({
-      current_plot |> layout(dragmode = input$interaction_mode)  # Dynamic mode switching
-    })
+    # Store the plot in reactiveValues
+    rv$plot <- plot
+    output$interactive_plot <- renderPlotly({ rv$plot })
   })
   
-  # Display brushed points
+  # Use plotlyProxy to update mode **without redrawing**
+  observeEvent(input$interaction_mode, {
+    req(rv$plot)  # Ensure a plot exists
+    plotlyProxy("interactive_plot", session) %>%
+      plotlyProxyInvoke("relayout", list(dragmode = input$interaction_mode))
+  })
+  
+  # Display brushed points correctly
   output$brush_info <- renderPrint({
     selected <- event_data("plotly_selected")  # Get brushed points
-    if (is.null(selected)) {
+    if (is.null(selected) || length(selected) == 0) {
       "No points selected"
     } else {
-      selected
+      selected  # Print the list of selected points
     }
   })
   
   # Reset button
   observeEvent(input$reset_button, {
+    rv$plot <- NULL
     output$interactive_plot <- renderPlotly({ NULL })
   })
 }
 
 # Run the app
 shinyApp(ui = ui, server = server)
-
-##Jackson Says hi, this is a test
