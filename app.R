@@ -101,7 +101,7 @@ server <- function(input, output, session) {
     output$brush_info <- renderPrint({
      
       selected <- event_data("plotly_selected")  # Capture selected points
-      
+      summary(selected)
     })
 
   
@@ -109,7 +109,7 @@ server <- function(input, output, session) {
   observeEvent(input$reset_button, {
     rv$plot <- NULL
     output$interactive_plot <- renderPlotly({ NULL })
-  })
+  }) 
 }
 
 # Run the app
