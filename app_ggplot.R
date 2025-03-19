@@ -6,17 +6,17 @@ library(tidyverse)
 library(lubridate)
 library(shinyjs)
 
-# ---------------------- Home Page UI ----------------------
+# ---------------------------- Home Page UI ------------------------
 home_ui <- fluidPage(
   useShinyjs(),  # Activate shinyjs
-  # Custom JS to clear the brush overlay
+  # Custom JS to clear the brush overlay when receiving the "resetBrush" message
   tags$script(HTML("
     Shiny.addCustomMessageHandler('resetBrush', function(plotId) {
       $('#' + plotId).trigger('mouseup');
     });
   ")),
   theme = bs_theme(bootswatch = "flatly"),
-  titlePanel("File Upload and Dynamic Plot"),
+  titlePanel("QA/QC Tool"),
   sidebarLayout(
     sidebarPanel(
       fileInput("file", "Upload CSV File", accept = ".csv"),
@@ -29,19 +29,24 @@ home_ui <- fluidPage(
       br(),
       wellPanel(
         h6("Removal Options"),
+        # Removal slider from brushed selection
+        uiOutput("removal_slider_ui"),
+        br(),
+        # Refinement slider to fine-tune endpoints
+        uiOutput("refinement_slider_ui"),
+        br(),
         fluidRow(
-          column(6, actionButton("clear_selection", "Clear Selection", 
-                                 class = "btn btn-warning", width = "100%")),
-          column(6, actionButton("confirm_removal", "Confirm Removal", 
-                                 class = "btn btn-success", width = "100%"))
+          column(6, actionButton("clear_selection", "Clear Selection", class = "btn btn-warning", width = "100%")),
+          column(6, actionButton("confirm_removal", "Confirm Removal", class = "btn btn-success", width = "100%"))
         )
       )
     ),
     mainPanel(
-      plotOutput("static_plot", brush = brushOpts(id = "plot_brush", direction = "x", resetOnNew = TRUE)),
+      plotOutput("static_plot", 
+                 brush = brushOpts(id = "plot_brush", direction = "x", resetOnNew = TRUE)),
       br(),
       uiOutput("date_slider_ui")
-      # Note: The brushed data table is removed.
+      # Note: The brushed data table has been removed.
     )
   )
 )
@@ -62,10 +67,10 @@ documentation_ui <- fluidPage(
         tags$li("Upload your CSV file on the Home page."),
         tags$li("Select the column you want to edit from the 'Select Column to Edit' dropdown."),
         tags$li("Select additional columns for comparison using the 'Select Columns for Comparison' dropdown."),
-        tags$li("Click 'Generate Plot' to create a dynamic plot. A date slider will appear beneath the plot."),
-        tags$li("Use the slider to filter the data by date and time."),
-        tags$li("Brush (click and drag horizontally) on the plot to select a subset of data."),
-        tags$li("Adjust the removal slider (which appears in the Removal Options panel) as needed, then click 'Confirm Removal' to set the brushed values for the edit column to NA (without modifying the original data)."),
+        tags$li("Click 'Generate Plot' to create a dynamic plot. A date slider will then appear beneath the plot."),
+        tags$li("Use the date slider to filter the data by date and time."),
+        tags$li("Brush (click and drag horizontally) on the plot to select a subset of data. After brushing, a removal slider and a refinement slider will appear in the Removal Options panel."),
+        tags$li("Adjust the refinement slider as needed, then click 'Confirm Removal' to set the brushed values for the edit column to NA (without modifying the original data)."),
         tags$li("Click 'Clear Selection' to clear the brush overlay, and 'Reset Graph' to revert to the original data.")
       ),
       h4("Notes"),
@@ -87,8 +92,10 @@ server <- function(input, output, session) {
   
   rv <- reactiveValues(data = NULL, filtered_data = NULL, date_range = NULL)
   
-  # Initially hide the date slider UI
+  # Initially hide the date slider UI and removal sliders
   hide("date_slider_ui")
+  hide("removal_slider_ui")
+  hide("refinement_slider_ui")
   
   # Process CSV upload
   observeEvent(input$file, {
@@ -100,7 +107,7 @@ server <- function(input, output, session) {
       return(NULL)
     })
     if (!is.null(df)) {
-      # Assume first column contains date-times; convert to POSIXct
+      # Convert first column to POSIXct for minute-level resolution.
       date_col <- colnames(df)[1]
       df[[date_col]] <- as.POSIXct(df[[date_col]])
       rv$data <- df
@@ -109,7 +116,7 @@ server <- function(input, output, session) {
     }
   })
   
-  # UI for selecting the column to edit (exclude the first column)
+  # UI for selecting column to edit (exclude the first column)
   output$edit_column_ui <- renderUI({
     req(rv$data)
     selectInput("edit_column", "Select Column to Edit",
@@ -117,7 +124,7 @@ server <- function(input, output, session) {
                 selected = NULL)
   })
   
-  # UI for selecting comparison columns (multiple; exclude the first column and the edit column)
+  # UI for selecting comparison columns (exclude first column and the edit column)
   output$comparison_selector_ui <- renderUI({
     req(rv$data)
     choices <- colnames(rv$data)[-1]
@@ -127,20 +134,21 @@ server <- function(input, output, session) {
                 choices = choices, multiple = TRUE)
   })
   
-  # When "Generate Plot" is clicked, update filtered_data and render the date slider UI.
+  # When "Generate Plot" is clicked, update filtered_data, render the date slider UI, and show removal options.
   observeEvent(input$plot_button, {
     req(rv$data)
     date_col <- colnames(rv$data)[1]
     rv$filtered_data <- rv$data  # Initially, use all data
     output$date_slider_ui <- renderUI({
       sliderInput("date_slider", "Select Date Range",
-                  min = rv$date_range[1],
-                  max = rv$date_range[2],
+                  min = rv$date_range[1], # lowest date value
+                  max = rv$date_range[2], # highest date value 
                   value = rv$date_range,
                   timeFormat = "%Y-%m-%d %H:%M",
                   width = "100%")
     })
     show("date_slider_ui")
+    show("refinement_slider_ui")  # Initially empty; will update on brush.
   })
   
   # Update filtered_data when the date slider changes.
@@ -154,14 +162,18 @@ server <- function(input, output, session) {
   
   # Render the ggplot2 plot.
   output$static_plot <- renderPlot({
+    
     req(rv$filtered_data, input$edit_column, input$comparison_columns)
     date_col <- colnames(rv$filtered_data)[1]
     plot_cols <- c(input$edit_column, input$comparison_columns)
+    
     long_df <- rv$filtered_data %>%
       select(all_of(c(date_col, plot_cols))) %>%
       pivot_longer(cols = all_of(plot_cols), names_to = "parameter", values_to = "value")
+    
     edit_df <- long_df %>% filter(parameter == input$edit_column)
     comp_df <- long_df %>% filter(parameter != input$edit_column)
+    
     p <- ggplot() +
       geom_line(data = comp_df, aes(x = .data[[date_col]], y = value, color = parameter),
                 linewidth = 1, alpha = 0.25) +
@@ -169,52 +181,58 @@ server <- function(input, output, session) {
                 linewidth = 1, alpha = 1) +
       geom_point(data = edit_df, aes(x = .data[[date_col]], y = value, color = parameter),
                  size = 1.25) +
-      labs(x = "Date", y = "Value", title = "Dynamic Plot") +
+      labs(x = "Date", y = "Value") +
       theme_classic()
-    # Overlay removal slider range if it exists.
-    if (!is.null(input$removal_slider)) {
+    
+    # If a removal slider exists (i.e. after brushing), overlay a rectangle.
+    if (!is.null(input$refinement_slider)) {
       p <- p +
-        geom_rect(aes(xmin = input$removal_slider[1], xmax = input$removal_slider[2],
+        geom_rect(aes(xmin = input$refinement_slider[1], xmax = input$refinement_slider[2],
                       ymin = -Inf, ymax = Inf),
                   fill = "red", alpha = 0.2, inherit.aes = FALSE)
     }
     p
   })
   
-  # When the plot is brushed, render a removal slider in the removal options panel.
+  # When the plot is brushed, render a removal slider and a refinement slider.
   observeEvent(input$plot_brush, {
     req(input$plot_brush)
     if (!is.null(input$plot_brush$xmin) && !is.null(input$plot_brush$xmax)) {
       brushed_min <- as.POSIXct(input$plot_brush$xmin, origin = "1970-01-01", tz = "UTC")
       brushed_max <- as.POSIXct(input$plot_brush$xmax, origin = "1970-01-01", tz = "UTC")
-      output$removal_slider_ui <- renderUI({
-        sliderInput("removal_slider", "Removal Range",
+      
+      output$refinement_slider_ui <- renderUI({
+        sliderInput("refinement_slider", "Refine Removal Range",
                     min = brushed_min,
                     max = brushed_max,
                     value = c(brushed_min, brushed_max),
                     timeFormat = "%Y-%m-%d %H:%M",
                     width = "100%")
       })
+      
+      # Clear the brush after capturing it, so the user can refine using the slider.
+      session$sendCustomMessage("resetBrush", "static_plot")
     }
   })
   
-  # When "Confirm Removal" is clicked, set the brushed values in the edit column to NA in rv$filtered_data.
+  # When "Confirm Removal" is clicked, set the brushed values in the edit column to NA using the refinement slider values.
   observeEvent(input$confirm_removal, {
-    req(input$removal_slider, rv$filtered_data, input$edit_column)
+    req(input$refinement_slider, rv$filtered_data, input$edit_column)
     date_col <- colnames(rv$data)[1]
-    removal_min <- input$removal_slider[1]
-    removal_max <- input$removal_slider[2]
+    removal_min <- input$refinement_slider[1]
+    removal_max <- input$refinement_slider[2]
+    
     new_data <- rv$filtered_data
     new_data[new_data[[date_col]] >= removal_min & new_data[[date_col]] <= removal_max, input$edit_column] <- NA
     rv$filtered_data <- new_data
   })
   
-  # When "Clear Selection" is clicked, send a custom message to clear the brush overlay.
+  # When "Clear Selection" is clicked, clear the brush overlay.
   observeEvent(input$clear_selection, {
     session$sendCustomMessage("resetBrush", "static_plot")
   })
   
-  # When "Reset Graph" is clicked, reset rv$filtered_data to rv$data and update the date slider.
+  # When "Reset Graph" is clicked, revert filtered_data to the original data and update the date slider.
   observeEvent(input$reset_graph, {
     req(rv$data)
     rv$filtered_data <- rv$data
