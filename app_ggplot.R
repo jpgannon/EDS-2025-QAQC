@@ -23,6 +23,10 @@ home_ui <- fluidPage(
       uiOutput("edit_column_ui"),
       uiOutput("comparison_selector_ui"),
       fluidRow(
+        column(6, uiOutput("precip_select")),
+        column(6, uiOutput("temp_select"))
+      ),
+      fluidRow(
         column(6, actionButton("plot_button", "Generate Plot", width = "100%")),
         column(6, actionButton("reset_graph", "Reset Graph", width = "100%"))
       ),
@@ -38,8 +42,11 @@ home_ui <- fluidPage(
         fluidRow(
           column(6, actionButton("clear_selection", "Clear Selection", class = "btn btn-warning", width = "100%")),
           column(6, actionButton("confirm_removal", "Confirm Removal", class = "btn btn-success", width = "100%"))
-        )
-      )
+        ),
+        br(),
+        actionButton("remove_final", "⚠️ Are You Sure? ", width = "100%", class = "btn btn-danger")
+      ),
+        downloadButton("Download", style = "margin-top: 400px")
     ),
     mainPanel(
       plotOutput("static_plot", 
@@ -134,6 +141,18 @@ server <- function(input, output, session) {
                 choices = choices, multiple = TRUE)
   })
   
+  output$precip_select <- renderUI({
+    req(rv$data)
+    choices <- colnames(rv$data)[-1]
+    selectInput("precip_select", "Select Precip. Column", choices = choices, multiple = FALSE, selected = choices[length(choices) - 1])
+  })
+  
+  output$temp_select <- renderUI({
+    req(rv$data)
+    choices <- colnames(rv$data)[-1]
+    selectInput("temp_select", "Select Temp. Column", choices = choices, multiple = FALSE, selected = choices[length(choices)])
+  })
+  
   # When "Generate Plot" is clicked, update filtered_data, render the date slider UI, and show removal options.
   observeEvent(input$plot_button, {
     req(rv$data)
@@ -218,7 +237,9 @@ server <- function(input, output, session) {
   # When "Confirm Removal" is clicked, set the brushed values in the edit column to NA using the refinement slider values.
   observeEvent(input$confirm_removal, {
     req(input$refinement_slider, rv$filtered_data, input$edit_column)
+    
     date_col <- colnames(rv$data)[1]
+    
     removal_min <- input$refinement_slider[1]
     removal_max <- input$refinement_slider[2]
     
