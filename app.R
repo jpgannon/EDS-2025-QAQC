@@ -45,7 +45,8 @@ library(DT)
 library(later)
 library(ggthemes)
 
-options(shiny.maxRequestSize = 30 * 1024^2)
+# File size 
+options(shiny.maxRequestSize = 30 * 1024^2) # Max file size is 30mB
 
 # ---------------------------- Home Page UI ------------------------
 home_ui <- fluidPage(
@@ -252,22 +253,75 @@ server <- function(input, output, session) {
     req(rv$data)
     rv$filtered_data <- rv$data
     output$date_slider_ui <- renderUI({
-      sliderInput("date_slider", "Data Range Slider",
-                  min = rv$date_range[1],
-                  max = rv$date_range[2],
-                  value = rv$date_range,
-                  timeFormat = "%Y-%m-%d %H:%M", width = "100%")
+      tagList(
+        sliderInput("date_slider", "Data Range Slider",
+                    min = rv$date_range[1],
+                    max = rv$date_range[2],
+                    value = rv$date_range,
+                    timeFormat = "%Y-%m-%d %H:%M", width = "100%"),
+        fluidRow(
+          column(3, actionButton("zoom_day", "Zoom: 1 Day", class = "btn btn-outline-primary", width = "100%")),
+          column(3, actionButton("zoom_week", "Zoom: 1 Week", class = "btn btn-outline-primary", width = "100%")),
+          column(3, actionButton("zoom_month", "Zoom: 1 Month", class = "btn btn-outline-primary", width = "100%")),
+          column(3, actionButton("zoom_all", "Zoom: All", class = "btn btn-outline-secondary", width = "100%"))
+        ),
+        fluidRow(
+          column(6, actionButton("scroll_left", "← Previous", class = "btn btn-outline-warning", width = "100%")),
+          column(6, actionButton("scroll_right", "Next →", class = "btn btn-outline-warning", width = "100%"))
+        )
+      )
     })
   })
   
   observeEvent(input$date_slider, {
     req(rv$data)
+    
     rv$filtered_data <- tryCatch({
       rv$data %>%
         filter(.data[[dateCol()]] >= input$date_slider[1],
                .data[[dateCol()]] <= input$date_slider[2])
     }, error = function(e) { rv$data })
+    
     rv$nudgeMode <- FALSE
+  })
+  
+  observeEvent(input$zoom_day, {
+    req(input$date_slider)
+    new_start <- max(input$date_slider[2] - days(1), rv$date_range[1])
+    updateSliderInput(session, "date_slider", value = c(new_start, input$date_slider[2]))
+  })
+  
+  observeEvent(input$zoom_week, {
+    req(input$date_slider)
+    new_start <- max(input$date_slider[2] - weeks(1), rv$date_range[1])
+    updateSliderInput(session, "date_slider", value = c(new_start, input$date_slider[2]))
+  })
+  
+  observeEvent(input$zoom_month, {
+    req(input$date_slider)
+    new_start <- max(input$date_slider[2] %m-% months(1), rv$date_range[1])
+    updateSliderInput(session, "date_slider", value = c(new_start, input$date_slider[2]))
+  })
+  
+  observeEvent(input$zoom_all, {
+    req(rv$date_range)
+    updateSliderInput(session, "date_slider", value = rv$date_range)
+  })
+  
+  observeEvent(input$scroll_left, {
+    req(input$date_slider)
+    span <- difftime(input$date_slider[2], input$date_slider[1], units = "secs")
+    new_start <- input$date_slider[1] - span
+    new_end <- input$date_slider[2] - span
+    updateSliderInput(session, "date_slider", value = c(new_start, new_end))
+  })
+  
+  observeEvent(input$scroll_right, {
+    req(input$date_slider)
+    span <- difftime(input$date_slider[2], input$date_slider[1], units = "secs")
+    new_start <- input$date_slider[1] + span
+    new_end <- input$date_slider[2] + span
+    updateSliderInput(session, "date_slider", value = c(new_start, new_end))
   })
   
   static_plot_data <- reactive({
@@ -300,7 +354,7 @@ server <- function(input, output, session) {
     if (!is.null(static_plot_data()$comp_df)) {
       p <- p + geom_line(data = static_plot_data()$comp_df,
                          aes(x = .data[[date_col]], y = value, color = parameter),
-                         linewidth = 1, alpha = 0.25)
+                         linewidth = 1, alpha = 0.70)
     }
     
     p <- p + geom_line(data = static_plot_data()$edit_df_all,
@@ -461,9 +515,11 @@ server <- function(input, output, session) {
     date_col <- colnames(nonint_data())[1]
     precip_col <- input$precip_select
     global_max <- max(rv$original[[precip_col]], na.rm = TRUE)
-    ggplot(rv$original %>% filter(.data[[date_col]] >= input$date_slider[1],
-                                  .data[[date_col]] <= input$date_slider[2]),
-           aes_string(x = date_col, y = precip_col)) +
+    
+    filtered_data <- nonint_data() %>%
+      filter(.data[[date_col]] <= input$date_slider[2])
+    
+    ggplot(filtered_data, aes_string(x = date_col, y = precip_col)) +
       geom_col(fill = "royalblue") +
       scale_y_reverse(limits = c(global_max, 0)) +
       labs(x = NULL, y = "Precipitation") +
@@ -485,7 +541,11 @@ server <- function(input, output, session) {
   
   final_data <- reactive({ 
     req(rv$original)
+    
     final_df <- rv$original
+    
+    final_df[[dateCol()]] <- format(final_df[[dateCol()]], "%Y-%m-%d %H:%M:%S")
+    
     if (!is.null(rv$cleaned))
       final_df <- left_join(final_df, rv$cleaned, by = dateCol())
     final_df
