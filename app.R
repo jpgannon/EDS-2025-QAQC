@@ -61,7 +61,7 @@ home_ui <- fluidPage(
   tags$style(HTML("
     .sidebar-wrapper { position: relative; height: 100%; padding-bottom: 60px; }
     .download-fixed { position: absolute; bottom: 0; left: 0; right: 0; padding: 10px; background-color: white; }
-    .irs-grid-text { transform: rotate(-45deg); transform-origin: top right; }
+    .irs-grid-text { transform: rotate(-25deg); transform-origin: top right; }
     .refinement-slider .irs-grid-text { display: none; }
   ")),
   theme = bs_theme(bootswatch = "flatly"),
@@ -259,6 +259,7 @@ server <- function(input, output, session) {
                     max = rv$date_range[2],
                     value = rv$date_range,
                     timeFormat = "%Y-%m-%d %H:%M", width = "100%"),
+        br(),
         fluidRow(
           column(3, actionButton("zoom_day", "Zoom: 1 Day", class = "btn btn-outline-primary", width = "100%")),
           column(3, actionButton("zoom_week", "Zoom: 1 Week", class = "btn btn-outline-primary", width = "100%")),
@@ -376,7 +377,7 @@ server <- function(input, output, session) {
       theme(legend.margin = margin(0, 0, 0, 0),
             legend.position = c(0.99, 0.99),
             legend.justification = c("right", "top"),
-            plot.margin = margin(t = 5, r = 5, b = 5))
+            plot.margin = margin(t = 5, r = 5, b = 1))
   })
   
   output$range_text <- renderText({
@@ -536,18 +537,22 @@ server <- function(input, output, session) {
       geom_line(color = "orange", na.rm = TRUE, size = 0.5) +
       geom_point(color = "orange", na.rm = TRUE, size = 0.5) +
       labs(x = NULL,  y = "Air Temperature") +
-      theme(plot.margin = margin(t = 5, r = 5, b = 5))
+      theme(plot.margin = margin(t = 5, r = 5, b = 1))
   })
   
   final_data <- reactive({ 
-    req(rv$original)
+    req(rv$data)
     
-    final_df <- rv$original
+    final_df <- rv$data
     
-    final_df[[dateCol()]] <- format(final_df[[dateCol()]], "%Y-%m-%d %H:%M:%S")
+    # Format and clean leading zeros (if desired)
+    formatted <- format(final_df[[dateCol()]], "%m/%d/%y %H:%M")
+    formatted <- gsub("^0", "", formatted)
+    formatted <- gsub("/0", "/", formatted)
+    formatted <- sub(" (0)(\\d:)", " \\2", formatted)
     
-    if (!is.null(rv$cleaned))
-      final_df <- left_join(final_df, rv$cleaned, by = dateCol())
+    final_df[[dateCol()]] <- formatted
+    
     final_df
   })
   
