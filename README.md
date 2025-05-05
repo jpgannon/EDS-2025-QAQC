@@ -1,14 +1,14 @@
 # ** QAQC Shiny App **
-## Description / Overview  
+## Overview  
 This application provides an interactive web interface for examining and cleaning time-series stream gauge data. Users can visualize, identify, and replace erroneous measurements with `NA` values, and download both the original and cleaned datasets for further analysis.
 
-## Purpose / Goal  
+## Purpose 
 Stream gauge data collected at the Hubbard Brook Experimental Forest are prone to errors from natural debris like ice, leaves, and branches. Existing tools for cleaning these datasets are outdated and inefficient. This app was built to streamline the workflow with modern interactive features, reducing human error and time spent on manual correction.
 
 ## Link to Use Data  
 Researchers can upload their own `.csv` files via the app. To obtain official stream data, visit: [https://hubbardbrook.org/data/dataset/](https://hubbardbrook.org/data/dataset/)
 
-## Key Functions / Features  
+## App Features  
 - Upload `.csv` file of time-series data  
 - Select data column(s) to clean and reference/comparison column(s)  
 - Interactive plot generation  
