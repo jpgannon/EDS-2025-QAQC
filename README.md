@@ -38,13 +38,7 @@ install.packages(c("shiny", "ggplot2", "dplyr", "readr", "shinyWidgets", "plotly
 
 ## How to Run
 
-In R or RStudio:
-
-``` r
-shiny::runApp("path/to/your/app")
-```
-
-Alternatively, if hosted online (e.g., via shinyapps.io), just open the link in a browser.
+First, download the code from online servers
 
 ## Known Issues
 
