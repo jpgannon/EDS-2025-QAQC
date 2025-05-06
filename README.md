@@ -1,6 +1,6 @@
 # ** QAQC Shiny App **
 ## Overview  
-This application gives users an easy-to-use web interface for looking at and fixing time-series stream gauge data. Users can view the data in different ways to spot errors or strange values. They can mark those data points and replace them with `NA` values to keep the data structure while showing those values are not usable. The app also lets users compare the original and cleaned data side by side to make sure the changes look right. Both the original and cleaned datasets can be downloaded for use in other programs or reports.
+This application gives users an easy-to-use web interface for looking at and fixing time-series stream gauge data. Users can view the data in different ways to spot errors or strange values. They can mark those data points and replace them with `NA` values to keep the data structure while showing those values are not usable. The app also lets users compare the original and cleaned data side by side to make sure the changes look right. The cleaned dataset can be downloaded for use in other programs or reports.
 
 
 ## Purpose 
@@ -21,7 +21,6 @@ Users and researchers can upload their own `.csv` files via the app. To obtain o
 - Export includes both original and modified values for transparency  
 
 ## How Does It Work?
-
 1.  Upload a `.csv` file containing time-series data\
 2.  Select the columns to inspect and optionally choose comparison columns for reference\
 3.  An interactive plot is generated\
@@ -30,20 +29,12 @@ Users and researchers can upload their own `.csv` files via the app. To obtain o
 6.  Users can save changes and download a cleaned dataset with edits preserved
 
 ## How to Install & Run
+Visit (webpage) to use the application in your browser. 
+-OR- 
+Download the code from the GitHub repository and open in RStudio. 
 
-Download the code from the GitHub repository.\
-
-This app runs in [R](https://www.r-project.org/) using the **Shiny** package.\
-The application will install all required packages on first run, so it may take longer than subsequent launches\
-
-
-``` r
-install.packages(c("shiny", "ggplot2", "dplyr", "readr", "shinyWidgets", "plotly"))
-```
-
-## How to Run
-
-
+This app runs in [R](https://www.r-project.org/) using the **Shiny** package.
+The application will install all required packages on first run this may take a minute depending on your machine.
 
 ## Known Issues
 
@@ -53,4 +44,4 @@ install.packages(c("shiny", "ggplot2", "dplyr", "readr", "shinyWidgets", "plotly
 
 ## Author
 
-Developed by students at Virginia Tech University, Alex Turse and Claire Porter.
+Developed by students at Virginia Tech University, and Claire Porter.
