@@ -21,27 +21,24 @@ Users and researchers can upload their own `.csv` files via the app. To obtain o
 - Export includes both original and modified values for transparency  
 
 ## How Does It Work?
-1.  Upload a `.csv` file containing time-series data\
-2.  Select the columns to inspect and optionally choose comparison columns for reference\
-3.  An interactive plot is generated\
-4.  Users adjust the timeline and zoom levels to focus on specific periods\
-5.  Suspect data points can be selected (brushed) and marked as `NA`\
+1.  Upload a `.csv` file containing time-series data
+2.  Select the columns to inspect and optionally choose comparison columns for reference
+3.  An interactive plot is generated
+4.  Users adjust the timeline and zoom levels to focus on specific periods
+5.  Suspect data points can be selected (brushed) and marked as `NA`
 6.  Users can save changes and download a cleaned dataset with edits preserved
 
 ## How to Install & Run
-Visit (webpage) to use the application in your browser. 
--OR- 
-Download the code from the GitHub repository and open in RStudio. 
+Visit (webpage) to use the application in your browser.\
+Download the code from the GitHub repository and open in RStudio.
 
-This app runs in [R](https://www.r-project.org/) using the **Shiny** package.
+This app runs in [R](https://www.r-project.org/) using the **Shiny** package.\
 The application will install all required packages on first run this may take a minute depending on your machine.
 
 ## Known Issues
+-   Large files may slow down rendering (maximum file size is 30mB)
+-   Brushing and zooming may occasionally overlap in behavior
+-   Syncing between multiple plots can sometimes lag slightly
 
--   Large files may slow down rendering.
--   Brushing and zooming may occasionally overlap in behavior.
--   Syncing between multiple plots can sometimes lag slightly.
-
-## Author
-
-Developed by students at Virginia Tech University, and Claire Porter.
+## Authors
+Developed by students at Virginia Tech University, Alex Turse and Claire Porter.
