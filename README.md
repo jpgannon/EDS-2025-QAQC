@@ -1,12 +1,14 @@
 # ** QAQC Shiny App **
 ## Overview  
-This application provides an interactive web interface for examining and cleaning time-series stream gauge data. Users can visualize, identify, and replace erroneous measurements with `NA` values, and download both the original and cleaned datasets for further analysis.
+This application gives users an easy-to-use web interface for looking at and fixing time-series stream gauge data. Users can view the data in different ways to spot errors or strange values. They can mark those data points and replace them with `NA` values to keep the data structure while showing those values are not usable. The app also lets users compare the original and cleaned data side by side to make sure the changes look right. Both the original and cleaned datasets can be downloaded for use in other programs or reports.
+
 
 ## Purpose 
-Stream gauge data collected at the Hubbard Brook Experimental Forest are prone to errors from natural debris like ice, leaves, and branches. Existing tools for cleaning these datasets are outdated and inefficient. This app was built to streamline the workflow with modern interactive features, reducing human error and time spent on manual correction.
+Stream gauge data collected at the Hubbard Brook Experimental Forest are often affected by natural debris such as ice, leaves, and branches, which can cause spikes, dropouts, or other errors in the recorded measurements. These errors make it difficult to analyze long-term trends or perform accurate hydrologic modeling without first cleaning the data. While there are existing tools available for this task, many are outdated, lack user-friendly interfaces, and require significant manual effort, which increases the chances of human error and slows down the overall data processing workflow. This application was developed to address these challenges by providing a modern, interactive platform that simplifies and speeds up the data cleaning process. With tools for visual inspection, point-and-click error marking, zooming, and automated data previewing, users can more easily identify and fix problems in the dataset. As a result, the app helps improve data quality while reducing the time and effort required for manual correction.
+
 
 ## Link to Use Data  
-Researchers can upload their own `.csv` files via the app. To obtain official stream data, visit: [https://hubbardbrook.org/data/dataset/](https://hubbardbrook.org/data/dataset/)
+Users and researchers can upload their own `.csv` files via the app. To obtain official stream data, visit: [https://hubbardbrook.org/data/dataset/](https://hubbardbrook.org/data/dataset/)
 
 ## App Features  
 - Upload `.csv` file of time-series data  
