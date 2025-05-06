@@ -121,7 +121,7 @@ home_ui <- fluidPage(
 # ---------------------- Documentation Page UI ----------------------
 documentation_ui <- fluidPage(
   theme = bs_theme(bootswatch = "cosmo"),
-  titlePanel("How to Use This App"),
+  titlePanel("How to Use The Application"),
   sidebarLayout(
     sidebarPanel(
       h4("File Requirements"),
