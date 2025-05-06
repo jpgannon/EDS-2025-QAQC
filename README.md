@@ -29,10 +29,13 @@ Users and researchers can upload their own `.csv` files via the app. To obtain o
 5.  Suspect data points can be selected (brushed) and marked as `NA`\
 6.  Users can save changes and download a cleaned dataset with edits preserved
 
-## How to Install
+## How to Install & Run
+
+Download the code from the GitHub repository.\
 
 This app runs in [R](https://www.r-project.org/) using the **Shiny** package.\
-To install required packages:
+The application will install all required packages on first run, so it may take longer than subsequent launches\
+
 
 ``` r
 install.packages(c("shiny", "ggplot2", "dplyr", "readr", "shinyWidgets", "plotly"))
@@ -40,7 +43,7 @@ install.packages(c("shiny", "ggplot2", "dplyr", "readr", "shinyWidgets", "plotly
 
 ## How to Run
 
-First, download the code from online servers
+
 
 ## Known Issues
 
